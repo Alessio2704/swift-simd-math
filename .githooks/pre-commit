@@ -1,0 +1,25 @@
+#!/bin/sh
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+MPFR_TOOL="$REPO_ROOT/Tools/MPFRAudit"
+cd "$REPO_ROOT"
+
+echo "Running full verification checks..."
+
+swift format --in-place --recursive Sources Tests "$MPFR_TOOL/Sources/MPFRAuditCore" "$MPFR_TOOL/Sources/MPFRAudit" "$MPFR_TOOL/Tests"
+swift format lint --strict --recursive Sources Tests "$MPFR_TOOL/Sources/MPFRAuditCore" "$MPFR_TOOL/Sources/MPFRAudit" "$MPFR_TOOL/Tests"
+
+if command -v swiftlint >/dev/null 2>&1; then
+  swiftlint lint --strict
+fi
+
+git add -u
+
+swift build --build-tests -Xswiftc -warnings-as-errors -Xswiftc -index-store-path -Xswiftc "$REPO_ROOT/.build/out"
+if command -v periphery >/dev/null 2>&1; then
+  echo "Running Periphery unused code analysis (SwiftSIMDMath)..."
+  periphery scan --index-store-path "$REPO_ROOT/.build/out" --skip-build
+fi
+
+echo "✓ Verification checks passed."

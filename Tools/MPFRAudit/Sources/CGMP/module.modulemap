@@ -1,0 +1,5 @@
+module CGMP [system] {
+    header "gmp_shim.h"
+    link "gmp"
+    export *
+}

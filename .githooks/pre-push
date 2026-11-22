@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+(cd "$REPO_ROOT" && swift test -c release)
+
+if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists mpfr gmp; then
+  MPFR_TOOL="$REPO_ROOT/Tools/MPFRAudit"
+  echo "Running Tools/MPFRAudit unit test suite (CMPFRBridge, emitter, fault injection, samplers)..."
+  swift test -c release --package-path "$MPFR_TOOL"
+  echo "Running GNU MPFR quick certification check across all cataloged SIMD operations..."
+  swift run -c release --package-path "$MPFR_TOOL" MPFRAudit --quick
+else
+  echo "Skipping optional GNU MPFR tests & quick check (install mpfr & gmp with pkg-config to enable)."
+fi
